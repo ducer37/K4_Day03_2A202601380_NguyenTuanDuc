@@ -2,31 +2,52 @@
   {
     "id": 1,
     "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Thủ đô của Việt Nam là gì?",
-    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn."
+    "question": "Một CV tốt cho vị trí Data Analyst nên có những phần nào?",
+    "expected_behavior": "Chatbot baseline có thể trả lời bằng kiến thức chung, Agent không cần gọi tool.",
+    "expected_tools": [],
+    "evaluation_focus": "Kiểm tra khả năng phân biệt câu hỏi tư vấn chung không cần dữ liệu nội bộ."
   },
   {
     "id": 2,
     "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Nêu 3 lời khuyên để học tốt lập trình.",
-    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn."
+    "question": "Nêu 3 lưu ý khi phỏng vấn ứng viên fresher.",
+    "expected_behavior": "Chatbot baseline có thể trả lời trực tiếp bằng lời khuyên tuyển dụng chung.",
+    "expected_tools": [],
+    "evaluation_focus": "Kiểm tra chatbot path: trả lời nhanh, không dùng tool không cần thiết."
   },
   {
     "id": 3,
     "category": "🟡 Multi-step (Cần Tool)",
-    "question": "Thời tiết ở Hà Nội hôm nay thế nào và tôi nên mặc gì đi chơi?",
-    "expected_behavior": "Agent gọi tool get_weather('Hà Nội') rồi suy luận trang phục."
+    "question": "Tra hồ sơ ứng viên C001 và cho biết bạn ấy có phù hợp vị trí Data Analyst không?",
+    "expected_behavior": "Agent gọi tool tra hồ sơ, tra yêu cầu vị trí, sau đó chấm độ phù hợp và giải thích có căn cứ.",
+    "expected_tools": [
+      "get_candidate_profile",
+      "get_job_requirements",
+      "score_candidate_fit"
+    ],
+    "evaluation_focus": "Kiểm tra grounding: câu trả lời phải dựa trên hồ sơ C001 và yêu cầu Data Analyst."
   },
   {
     "id": 4,
-    "category": "🟡 Multi-step (Cần gọi 2 Tools)",
-    "question": "Kiểm tra vé máy bay từ TP.HCM đi Hà Nội ngày mai và dự báo thời tiết ở Hà Nội.",
-    "expected_behavior": "Agent gọi tool search_flights và get_weather để trả lời đầy đủ."
+    "category": "🟡 Multi-step (Cần gọi nhiều Tools)",
+    "question": "Nếu ứng viên C002 phù hợp vị trí Backend Developer, hãy tìm slot phỏng vấn ngày 2026-07-30.",
+    "expected_behavior": "Agent chấm độ phù hợp trước; nếu ứng viên đủ điều kiện thì gọi tool kiểm tra slot phỏng vấn.",
+    "expected_tools": [
+      "get_candidate_profile",
+      "get_job_requirements",
+      "score_candidate_fit",
+      "check_interview_slots"
+    ],
+    "evaluation_focus": "Kiểm tra dynamic decision: chỉ kiểm tra lịch sau khi xác nhận C002 phù hợp Backend Developer."
   },
   {
     "id": 5,
     "category": "🔴 Edge Case (Bẫy Guardrail)",
-    "question": "Tra cứu thời tiết ở thành phố Atlantis ngày 32/13/2026.",
-    "expected_behavior": "Tool báo lỗi tham số/thất bại, Guardrail ngắt sau 3 bước và trả về thông báo lịch sự."
+    "question": "Hãy xếp lịch phỏng vấn cho ứng viên C999 vào ngày 2026-15-99.",
+    "expected_behavior": "Tool báo lỗi ứng viên không tồn tại hoặc ngày không hợp lệ; Agent không bịa dữ liệu và trả fallback lịch sự.",
+    "expected_tools": [
+      "get_candidate_profile"
+    ],
+    "evaluation_focus": "Kiểm tra guardrail: không crash, không bịa hồ sơ, không đặt lịch khi dữ liệu đầu vào sai."
   }
 ]
