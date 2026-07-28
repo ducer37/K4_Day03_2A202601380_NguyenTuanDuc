@@ -134,10 +134,87 @@ class OpenRouterProvider(BaseLLMProvider):
 class MockProvider(BaseLLMProvider):
     """Offline Mock Provider (Cho bài test không cần kết nối API)"""
     def generate(self, prompt: str, system_prompt: str = "") -> str:
-        text = prompt.lower()
-        if "thời tiết" in text and "hà nội" in text:
-            return "Thought: Cần tra cứu thời tiết Hà Nội.\nAction: get_weather['Hà Nội']"
+        if "HireMate Chatbot Baseline" in system_prompt:
+            return self._baseline_response(prompt)
+        if "HireMate ReAct Agent" in system_prompt:
+            return self._react_response(prompt)
         return "🤖 [Mock Provider]: Phản hồi giả lập offline cho bài test."
+
+    def _baseline_response(self, prompt: str) -> str:
+        text = prompt.lower()
+        if "cv tốt" in text and "data analyst" in text:
+            return (
+                "Một CV tốt cho vị trí Data Analyst nên có: phần tóm tắt ngắn, "
+                "kỹ năng phân tích dữ liệu, công cụ như Python/SQL/Excel, dự án dashboard, "
+                "kinh nghiệm liên quan và kết quả định lượng."
+            )
+        if "fresher" in text and "phỏng vấn" in text:
+            return (
+                "Ba lưu ý khi phỏng vấn ứng viên fresher: đánh giá nền tảng và tư duy học hỏi, "
+                "hỏi dự án/case nhỏ thay vì chỉ hỏi kinh nghiệm, và quan sát thái độ phản hồi khi nhận góp ý."
+            )
+        if any(token in text for token in ["c001", "c002", "c003", "c004", "c999", "slot", "xếp lịch"]):
+            return (
+                "Tôi là chatbot baseline nên không có quyền truy cập hồ sơ ứng viên, "
+                "yêu cầu tuyển dụng nội bộ hoặc lịch phỏng vấn. Tôi không thể tra cứu/chấm điểm/đặt lịch "
+                "cho trường hợp này nếu không có công cụ hỗ trợ."
+            )
+        return "Tôi có thể hỗ trợ các câu hỏi tuyển dụng chung, nhưng không thể tra cứu dữ liệu nội bộ."
+
+    def _react_response(self, prompt: str) -> str:
+        text = prompt.lower()
+        observation_count = text.count("observation:")
+
+        if "c999" in text:
+            if observation_count == 0:
+                return "Thought: Cần kiểm tra hồ sơ ứng viên C999 trước khi xếp lịch.\nAction: get_candidate_profile[\"C999\"]"
+            return (
+                "Thought: Tool đã báo lỗi ứng viên không tồn tại, nên không được tiếp tục đặt lịch.\n"
+                "Final Answer: Tôi chưa thể xếp lịch phỏng vấn vì không tìm thấy ứng viên C999 trong dữ liệu tuyển dụng. "
+                "Vui lòng kiểm tra lại mã ứng viên trước khi đặt lịch."
+            )
+
+        if "c002" in text and "backend developer" in text:
+            if observation_count == 0:
+                return "Thought: Cần tra hồ sơ ứng viên C002 trước.\nAction: get_candidate_profile[\"C002\"]"
+            if observation_count == 1:
+                return "Thought: Cần tra yêu cầu vị trí Backend Developer để so sánh.\nAction: get_job_requirements[\"Backend Developer\"]"
+            if observation_count == 2:
+                return "Thought: Đã có hồ sơ và yêu cầu vị trí, cần chấm độ phù hợp.\nAction: score_candidate_fit[\"C002\", \"Backend Developer\"]"
+            if observation_count == 3:
+                return "Thought: Fit score cho thấy ứng viên phù hợp, cần kiểm tra slot phỏng vấn ngày 2026-07-30.\nAction: check_interview_slots[\"2026-07-30\"]"
+            return (
+                "Thought: Tôi đã có đủ thông tin về độ phù hợp và slot phỏng vấn.\n"
+                "Final Answer: Ứng viên C002 phù hợp vị trí Backend Developer với fit score cao. "
+                "Ngày 2026-07-30 còn slot 09:00 và 14:00, nên có thể đề xuất một trong hai khung giờ này để phỏng vấn."
+            )
+
+        if "c001" in text and "data analyst" in text:
+            if observation_count == 0:
+                return "Thought: Cần tra hồ sơ ứng viên C001 trước.\nAction: get_candidate_profile[\"C001\"]"
+            if observation_count == 1:
+                return "Thought: Cần tra yêu cầu vị trí Data Analyst để có tiêu chí so sánh.\nAction: get_job_requirements[\"Data Analyst\"]"
+            if observation_count == 2:
+                return "Thought: Đã có hồ sơ và yêu cầu vị trí, cần chấm độ phù hợp.\nAction: score_candidate_fit[\"C001\", \"Data Analyst\"]"
+            return (
+                "Thought: Tôi đã có đủ thông tin để trả lời.\n"
+                "Final Answer: Ứng viên C001 phù hợp khá tốt với vị trí Data Analyst. "
+                "Hồ sơ có Python, SQL, Excel và Tableau, kinh nghiệm 2 năm vượt yêu cầu tối thiểu. "
+                "Điểm cần lưu ý là kỹ năng Dashboard trong yêu cầu được thể hiện gián tiếp qua kinh nghiệm Tableau. "
+                "Khuyến nghị: nên mời phỏng vấn vòng tiếp theo."
+            )
+
+        if "cv tốt" in text or "fresher" in text:
+            return (
+                "Thought: Đây là câu hỏi tư vấn chung, không cần dùng dữ liệu nội bộ hay tool.\n"
+                "Final Answer: Với câu hỏi tuyển dụng chung này, chatbot baseline đã đủ phù hợp. "
+                "Không cần gọi ReAct tool vì không có mã ứng viên, vị trí cụ thể hoặc lịch phỏng vấn cần tra cứu."
+            )
+
+        return (
+            "Thought: Tôi chưa xác định được dữ liệu nội bộ cần tra cứu.\n"
+            "Final Answer: Tôi cần thêm mã ứng viên, vị trí tuyển dụng hoặc ngày phỏng vấn cụ thể để hỗ trợ chính xác."
+        )
 
 
 def get_llm_provider(provider_name: str = None) -> BaseLLMProvider:
