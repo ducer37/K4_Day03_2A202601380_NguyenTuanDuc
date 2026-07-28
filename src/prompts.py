@@ -36,6 +36,7 @@ MAX_TOOL_CALLS_TOTAL = 8    # Tổng số lần gọi tool cho 1 câu hỏi
 
 FIT_THRESHOLD_PASS = 70     # >= 70: nên chuyển vòng phỏng vấn
 FIT_THRESHOLD_BORDERLINE = 50  # 50-69: cân nhắc, cần người ra quyết định
+TIMEOUT_SECONDS = 20
 
 TODAY_ISO = date.today().isoformat()
 
