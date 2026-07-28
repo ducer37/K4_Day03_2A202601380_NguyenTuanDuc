@@ -77,7 +77,7 @@ Bộ test chính thức được rút gọn còn **7 case** trong `config/test_c
 | Auto-final sau `score_candidate_fit` | Nếu user chỉ hỏi phù hợp hay không, dừng ngay sau fit score. |
 | Auto-final sau `check_interview_slots` | Nếu user chỉ hỏi tìm slot, dừng ngay sau danh sách slot. |
 | Domain router | Câu ngoài phạm vi HireMate không dùng memory tuyển dụng cũ. |
-| Memory filter | Memory theo từng session, bỏ baseline khỏi context và giới hạn độ dài message. |
+| Memory context hook | Core agent nhận `memory_context` như ngữ cảnh tham khảo và có domain router để tránh dùng memory cũ sai ngữ cảnh. Persistent chat history thuộc UI demo local, không nằm trong pipeline nộp chính. |
 
 ---
 
@@ -207,13 +207,15 @@ user: Hãy phân tích bài thơ Nam quốc sơn hà cho tôi.
 agent: Fit score cho ứng viên C007 ... 28/100.
 ```
 
-Root cause: Agent đưa toàn bộ memory session vào prompt nhưng chưa kiểm tra current question có thuộc domain HireMate không.
+Root cause: Agent đưa memory/conversation context vào prompt nhưng chưa kiểm tra current question có thuộc domain HireMate không.
 
 Fix:
 
 - Thêm domain router `is_hiremate_domain_query()`.
 - Nếu câu ngoài phạm vi, trả out-of-scope ngay và không gọi LLM.
-- Memory context chỉ lấy message trong session hiện tại, bỏ baseline và giới hạn độ dài từng message.
+- Core agent xem memory chỉ là bối cảnh phụ, ưu tiên current question.
+- Domain router chặn câu ngoài phạm vi trước khi gọi LLM, tránh lặp lại thông tin ứng viên cũ.
+- Persistent chat history/memory theo session được thử nghiệm ở UI demo local, nhưng không đưa vào pipeline nộp chính.
 
 After:
 
@@ -236,3 +238,27 @@ Final Answer: Câu hỏi hiện tại nằm ngoài phạm vi demo HireMate, nên
 | Observability | Không có trace hành động | Có ReAct Trace: Thought, Action, Observation, Final Answer |
 
 Kết luận: Baseline phù hợp cho câu hỏi kiến thức chung. ReAct Agent phù hợp hơn cho nghiệp vụ có dữ liệu nội bộ, nhiều bước và cần kiểm soát hành động.
+
+---
+
+## Hybrid Decision Flowchart
+
+Flowchart dưới đây mô tả cách hệ thống quyết định khi nào trả lời trực tiếp, khi nào dùng ReAct Agent và khi nào cần fallback an toàn.
+
+![Hybrid Decision Flowchart](flowchart.png)
+
+File nguồn Mermaid: `docs/hybrid_flowchart.mermaid`.
+
+---
+
+## Bonus: Planning & Memory
+
+Phần này có thể được nêu như **Level 4-lite / bonus evidence**, nhưng không nên mô tả quá mức thành autonomous agent hoàn chỉnh.
+
+| Năng lực bonus | Đã thể hiện trong bài | Giới hạn |
+| :--- | :--- | :--- |
+| Planning / tự rã mục tiêu | Agent tự chia tác vụ tuyển dụng thành các bước như chấm fit trước, sau đó mới tìm slot, và chỉ đặt lịch khi có giờ cụ thể. Logic này thể hiện qua ReAct trace và các guardrail trong `src/app.py`. | Đây là planning ngắn hạn theo từng request, chưa phải planner tự lập kế hoạch dài hạn nhiều ngày. |
+| Self-evaluation / tự kiểm soát | Agent có các điểm tự dừng như auto-final sau `score_candidate_fit`, auto-final sau `check_interview_slots`, duplicate action guard và `MAX_ITERATIONS`. | Việc đánh giá chủ yếu do application guardrail hỗ trợ, không phải cơ chế reflection độc lập của LLM. |
+| Memory | Core agent có `memory_context` hook và domain router để tránh dùng memory cũ sai ngữ cảnh. Test case Memory Isolation chứng minh agent không lặp lại kết quả C007 khi user hỏi ngoài phạm vi. | Persistent chat history theo session thuộc UI demo local; phần nộp chính chỉ giữ pipeline CLI/core agent. |
+
+Kết luận bonus: bài làm có yếu tố planning và memory ở mức hỗ trợ demo/guardrail, đủ để giải trình bonus, nhưng trọng tâm chính vẫn là ReAct Agent cấp 3 theo yêu cầu lab.
