@@ -138,7 +138,8 @@ def run_react_agent(user_query: str, provider) -> dict:
         print(f"\n--- 🔄 Vòng lặp ReAct (Step {step}/{MAX_ITERATIONS}) ---")
 
         prompt = render_react_prompt(user_query, scratchpad)
-        llm_output = provider.generate(prompt, system_prompt=REACT_SYSTEM_PROMPT).strip()
+        raw_output = provider.generate(prompt, system_prompt=REACT_SYSTEM_PROMPT)
+        llm_output = str(raw_output or "[LLM Empty Response]: Provider không trả về nội dung.").strip()
         print(llm_output)
 
         final_answer = parse_final_answer(llm_output)

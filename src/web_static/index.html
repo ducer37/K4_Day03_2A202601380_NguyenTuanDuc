@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HireMate Agent Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="test-rail" aria-label="Test cases">
+        <div class="brand-block">
+          <div class="brand-mark">H</div>
+          <div>
+            <h1>HireMate Agent</h1>
+            <p id="providerMeta">Loading provider...</p>
+          </div>
+        </div>
+
+        <div class="rail-header">
+          <h2>Test Cases</h2>
+          <button id="reloadCases" class="icon-button" type="button" title="Reload test cases" aria-label="Reload test cases">↻</button>
+        </div>
+        <div id="testCases" class="test-list"></div>
+      </aside>
+
+      <section class="workbench" aria-label="HireMate chat workbench">
+        <form id="chatForm" class="composer">
+          <label for="questionInput">Question</label>
+          <textarea id="questionInput" rows="4" placeholder="Nhập câu hỏi tuyển dụng hoặc chọn test case bên trái..."></textarea>
+          <div class="composer-actions">
+            <div class="segmented" role="radiogroup" aria-label="Run mode">
+              <label><input type="radio" name="mode" value="compare" checked /> Compare</label>
+              <label><input type="radio" name="mode" value="agent" /> Agent</label>
+              <label><input type="radio" name="mode" value="baseline" /> Baseline</label>
+            </div>
+            <button id="runButton" type="submit">Run</button>
+          </div>
+        </form>
+
+        <section class="results-grid" aria-live="polite">
+          <article class="result-panel">
+            <div class="panel-title">
+              <span>Baseline Chatbot</span>
+              <span class="badge muted">No tools</span>
+            </div>
+            <div id="baselineResult" class="answer-box empty">Chưa có kết quả.</div>
+          </article>
+
+          <article class="result-panel">
+            <div class="panel-title">
+              <span>ReAct Agent</span>
+              <span id="agentStatus" class="badge">Ready</span>
+            </div>
+            <div id="agentResult" class="answer-box empty">Chưa có kết quả.</div>
+          </article>
+        </section>
+      </section>
+
+      <aside class="trace-panel" aria-label="Agent trace">
+        <div class="rail-header">
+          <h2>Trace</h2>
+          <button id="clearTrace" class="icon-button" type="button" title="Clear trace" aria-label="Clear trace">×</button>
+        </div>
+        <div id="traceList" class="trace-list">
+          <div class="trace-empty">Thought, Action và Observation sẽ xuất hiện ở đây.</div>
+        </div>
+      </aside>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

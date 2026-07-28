@@ -41,7 +41,16 @@ class GeminiProvider(BaseLLMProvider):
                 model=self.model_name,
                 contents=contents
             )
-            return response.text
+            if response.text:
+                return response.text
+
+            finish_reason = "unknown"
+            try:
+                if response.candidates:
+                    finish_reason = str(response.candidates[0].finish_reason)
+            except Exception:
+                pass
+            return f"[Gemini Empty Response]: Model không trả về text. Finish reason: {finish_reason}"
         except Exception as e:
             return f"[Gemini Exception]: {str(e)}"
 
