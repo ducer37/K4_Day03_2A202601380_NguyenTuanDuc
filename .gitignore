@@ -5,3 +5,10 @@ __pycache__/
 .venv/
 env/
 venv/
+data/chat_sessions.json
+web.out.log
+web.err.log
+
+# Local frontend/web demo only, not required for the lab submission
+src/web_app.py
+src/web_static/

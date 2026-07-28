@@ -5,88 +5,7 @@ Nơi khai báo tất cả các "món đồ nghề" mà ReAct Agent có thể g�
 
 from datetime import datetime
 
-
-# ---------------------------------------------------------------------------
-# MOCK DATA - HIREMATE AGENT
-# ---------------------------------------------------------------------------
-
-CANDIDATES = {
-    "C001": {
-        "name": "Nguyễn Minh Anh",
-        "target_role": "Data Analyst",
-        "experience_years": 2,
-        "skills": ["Python", "SQL", "Excel", "Tableau"],
-        "highlights": [
-            "Từng xây dashboard bán hàng bằng Tableau",
-            "Có kinh nghiệm phân tích dữ liệu khách hàng",
-        ],
-    },
-    "C002": {
-        "name": "Trần Quốc Bảo",
-        "target_role": "Backend Developer",
-        "experience_years": 3,
-        "skills": ["Python", "Django", "PostgreSQL", "Docker", "REST API"],
-        "highlights": [
-            "Từng phát triển REST API cho hệ thống e-commerce",
-            "Có kinh nghiệm deploy service bằng Docker",
-        ],
-    },
-    "C003": {
-        "name": "Lê Thu Hà",
-        "target_role": "Marketing Intern",
-        "experience_years": 1,
-        "skills": ["Communication", "Content", "Canva", "Social Media"],
-        "highlights": [
-            "Từng quản lý fanpage câu lạc bộ sinh viên",
-            "Có portfolio nội dung social media",
-        ],
-    },
-    "C004": {
-        "name": "Phạm Gia Huy",
-        "target_role": "Frontend Developer",
-        "experience_years": 1,
-        "skills": ["JavaScript", "HTML", "CSS", "React"],
-        "highlights": [
-            "Từng làm landing page bằng React",
-            "Có kinh nghiệm UI component cơ bản",
-        ],
-    },
-}
-
-
-JOBS = {
-    "Data Analyst": {
-        "required_skills": ["Python", "SQL", "Excel", "Dashboard"],
-        "nice_to_have": ["Power BI", "Tableau"],
-        "min_experience_years": 1,
-        "description": "Phân tích dữ liệu kinh doanh, xây dashboard và đưa insight cho team vận hành.",
-    },
-    "Backend Developer": {
-        "required_skills": ["Python", "Django", "PostgreSQL", "REST API"],
-        "nice_to_have": ["Docker", "Cloud"],
-        "min_experience_years": 2,
-        "description": "Xây dựng API, xử lý logic server-side và làm việc với cơ sở dữ liệu.",
-    },
-    "Marketing Intern": {
-        "required_skills": ["Communication", "Content", "Canva"],
-        "nice_to_have": ["Social Media", "SEO"],
-        "min_experience_years": 0,
-        "description": "Hỗ trợ viết nội dung, thiết kế ấn phẩm cơ bản và vận hành kênh social.",
-    },
-    "Frontend Developer": {
-        "required_skills": ["JavaScript", "HTML", "CSS", "React"],
-        "nice_to_have": ["TypeScript", "Figma"],
-        "min_experience_years": 1,
-        "description": "Phát triển giao diện web, component UI và tối ưu trải nghiệm người dùng.",
-    },
-}
-
-
-INTERVIEW_SLOTS = {
-    "2026-07-30": ["09:00", "14:00"],
-    "2026-07-31": [],
-    "2026-08-01": ["10:30", "15:30"],
-}
+from mock_data import CANDIDATES, INTERVIEW_SLOTS, JOBS
 
 
 def _normalize_candidate_id(candidate_id: str) -> str:
@@ -266,33 +185,10 @@ def schedule_interview(candidate_id: str, job_title: str, date: str, time: str) 
     if time_text not in slots:
         return f"LỖI: Slot {time_text} ngày {date_text} không khả dụng."
 
-    slots.remove(time_text)
+    # Không remove slot để bộ test demo luôn deterministic khi chạy lại nhiều lần.
     return (
         f"Đã tạo lịch phỏng vấn cho ứng viên {cid} - {CANDIDATES[cid]['name']} "
         f"với vị trí {title} vào {date_text} lúc {time_text}."
-    )
-
-
-# ---------------------------------------------------------------------------
-# LEGACY DEMO TOOLS
-# Giữ tạm để src/app.py hiện tại chưa bị lỗi import trước khi chuyển hẳn
-# sang ReAct loop của đề tài HireMate ở phase sau.
-# ---------------------------------------------------------------------------
-
-def get_weather(location: str) -> str:
-    """Legacy demo tool: tra cứu thời tiết mẫu."""
-    loc_lower = location.lower()
-    if "hà nội" in loc_lower or "ha noi" in loc_lower:
-        return "Thời tiết Hà Nội: 28°C, Nắng nhẹ, Độ ẩm 65%."
-    return f"LỖI: Không tìm thấy dữ liệu thời tiết cho địa điểm '{location}'."
-
-
-def search_flights(origin: str, destination: str) -> str:
-    """Legacy demo tool: tra cứu chuyến bay mẫu."""
-    return (
-        f"Chuyến bay từ {origin} -> {destination} ngày mai:\n"
-        f"1. VN123 (08:00) - Giá: 1,500,000 VNĐ (Còn vé)\n"
-        f"2. VJ456 (14:30) - Giá: 1,200,000 VNĐ (Còn vé)"
     )
 
 

@@ -1,0 +1,19 @@
+flowchart TD
+    A["User nhập câu hỏi"] --> B{"Current question thuộc HireMate?"}
+    B -- "Không" --> C["Out-of-scope fallback\nKhông dùng memory tuyển dụng cũ"]
+    B -- "Có" --> D{"Câu hỏi kiến thức chung?\nCV, phỏng vấn, tuyển dụng"}
+    D -- "Có" --> E["Chatbot/Baseline path\nFinal Answer trực tiếp\nKhông gọi tool"]
+    D -- "Không" --> F{"Có mã ứng viên + vị trí?"}
+    F -- "Có" --> G["score_candidate_fit"]
+    G --> H{"Fit score >= 75?"}
+    H -- "Không" --> I["Final Answer: chưa phù hợp\nKhông kiểm tra slot"]
+    H -- "Có" --> J{"User có yêu cầu slot/lịch?"}
+    J -- "Không" --> K["Final Answer: fit score + khuyến nghị"]
+    J -- "Có" --> L["check_interview_slots"]
+    L --> M{"User đã yêu cầu đặt lịch\nvà có giờ cụ thể?"}
+    M -- "Không" --> N["Final Answer: liệt kê slot\nchờ user chọn giờ"]
+    M -- "Có" --> O["schedule_interview"]
+    O --> P["Final Answer: xác nhận lịch"]
+    F -- "Không" --> Q{"Chỉ hỏi slot theo ngày?"}
+    Q -- "Có" --> L
+    Q -- "Không" --> R["Safe fallback: yêu cầu bổ sung mã ứng viên,\nvị trí, ngày hoặc giờ"]

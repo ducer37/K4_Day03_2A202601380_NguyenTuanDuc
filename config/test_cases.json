@@ -1,53 +1,83 @@
 [
   {
     "id": 1,
-    "category": "🟢 Đơn giản (Chỉ cần LLM)",
+    "category": "🟢 General QA - Không cần tool",
     "question": "Một CV tốt cho vị trí Data Analyst nên có những phần nào?",
-    "expected_behavior": "Chatbot baseline có thể trả lời bằng kiến thức chung, Agent không cần gọi tool.",
+    "expected_behavior": "Baseline và Agent đều có thể trả lời bằng kiến thức chung; Agent không cần gọi tool.",
     "expected_tools": [],
-    "evaluation_focus": "Kiểm tra khả năng phân biệt câu hỏi tư vấn chung không cần dữ liệu nội bộ."
+    "expected_trace": "Final Answer trực tiếp, không có Action.",
+    "expected_output": "Nêu các phần chính của CV Data Analyst như thông tin cá nhân, mục tiêu nghề nghiệp, kỹ năng Python/SQL/Excel, dự án dashboard, kinh nghiệm, học vấn và chứng chỉ. Không được bịa dữ liệu ứng viên nội bộ.",
+    "evaluation_focus": "Phân biệt câu hỏi tư vấn chung với câu cần dữ liệu nội bộ."
   },
   {
     "id": 2,
-    "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Nêu 3 lưu ý khi phỏng vấn ứng viên fresher.",
-    "expected_behavior": "Chatbot baseline có thể trả lời trực tiếp bằng lời khuyên tuyển dụng chung.",
-    "expected_tools": [],
-    "evaluation_focus": "Kiểm tra chatbot path: trả lời nhanh, không dùng tool không cần thiết."
+    "category": "🟡 Fit Screening - Có dữ liệu nội bộ",
+    "question": "Tra hồ sơ ứng viên C001 và cho biết bạn ấy có phù hợp vị trí Data Analyst không?",
+    "expected_behavior": "Agent tra hồ sơ, tra yêu cầu vị trí, chấm fit và dừng; không tự kiểm tra slot phỏng vấn.",
+    "expected_tools": [
+      "get_candidate_profile",
+      "score_candidate_fit"
+    ],
+    "expected_trace": "get_candidate_profile[\"C001\"] -> score_candidate_fit[\"C001\", \"Data Analyst\"] -> Final Answer. Agent có thể gọi thêm get_job_requirements trước score, nhưng không bắt buộc vì score_candidate_fit đã tự đọc job mock.",
+    "expected_output": "C001 - Nguyễn Minh Anh phù hợp Data Analyst với fit score 78/100. Khớp Python, SQL, Excel; thiếu Dashboard; có Tableau; kinh nghiệm 2 năm so với yêu cầu 1 năm. Khuyến nghị nên mời phỏng vấn. Không hiển thị slot.",
+    "evaluation_focus": "Grounding theo hồ sơ và job requirement; chống tự mở rộng sang đặt lịch."
   },
   {
     "id": 3,
-    "category": "🟡 Multi-step (Cần Tool)",
-    "question": "Tra hồ sơ ứng viên C001 và cho biết bạn ấy có phù hợp vị trí Data Analyst không?",
-    "expected_behavior": "Agent gọi tool tra hồ sơ, tra yêu cầu vị trí, sau đó chấm độ phù hợp và giải thích có căn cứ.",
+    "category": "🟡 Low Fit - Không kiểm tra slot",
+    "question": "Ứng viên C003 có phù hợp với vị trí Backend Developer không?",
+    "expected_behavior": "Agent chấm fit thấp và dừng, không kiểm tra lịch phỏng vấn.",
     "expected_tools": [
-      "get_candidate_profile",
-      "get_job_requirements",
       "score_candidate_fit"
     ],
-    "evaluation_focus": "Kiểm tra grounding: câu trả lời phải dựa trên hồ sơ C001 và yêu cầu Data Analyst."
+    "expected_trace": "score_candidate_fit[\"C003\", \"Backend Developer\"] -> Final Answer. Agent có thể gọi thêm get_candidate_profile/get_job_requirements trước đó, nhưng không bắt buộc vì score_candidate_fit đã tự đọc dữ liệu mock.",
+    "expected_output": "C003 không phù hợp Backend Developer, fit score 10/100. Thiếu Python, Django, PostgreSQL, REST API; không có kỹ năng cộng điểm Docker/Cloud; không nên chuyển sang bước kiểm tra slot.",
+    "evaluation_focus": "Agent biết dừng khi ứng viên không đủ phù hợp."
   },
   {
     "id": 4,
-    "category": "🟡 Multi-step (Cần gọi nhiều Tools)",
+    "category": "🟡 Fit + Slot Lookup",
     "question": "Nếu ứng viên C002 phù hợp vị trí Backend Developer, hãy tìm slot phỏng vấn ngày 2026-07-30.",
-    "expected_behavior": "Agent chấm độ phù hợp trước; nếu ứng viên đủ điều kiện thì gọi tool kiểm tra slot phỏng vấn.",
+    "expected_behavior": "Agent chấm fit trước; nếu đủ phù hợp thì kiểm tra slot; không tự đặt lịch.",
     "expected_tools": [
-      "get_candidate_profile",
-      "get_job_requirements",
       "score_candidate_fit",
       "check_interview_slots"
     ],
-    "evaluation_focus": "Kiểm tra dynamic decision: chỉ kiểm tra lịch sau khi xác nhận C002 phù hợp Backend Developer."
+    "expected_trace": "score_candidate_fit[\"C002\", \"Backend Developer\"] -> check_interview_slots[\"2026-07-30\"] -> Final Answer. Agent có thể gọi thêm profile/job trước score, nhưng không bắt buộc.",
+    "expected_output": "C002 phù hợp Backend Developer với fit score 95/100. Ngày 2026-07-30 còn slot 09:00 và 14:00. Agent chỉ đề xuất slot, không gọi schedule_interview.",
+    "evaluation_focus": "Dynamic decision và guardrail: tìm slot nhưng chưa được đặt lịch."
   },
   {
     "id": 5,
-    "category": "🔴 Edge Case (Bẫy Guardrail)",
-    "question": "Hãy xếp lịch phỏng vấn cho ứng viên C999 vào ngày 2026-15-99.",
-    "expected_behavior": "Tool báo lỗi ứng viên không tồn tại hoặc ngày không hợp lệ; Agent không bịa dữ liệu và trả fallback lịch sự.",
+    "category": "🟠 Schedule - Đủ thông tin",
+    "question": "Hãy xếp lịch phỏng vấn cho ứng viên C005 vị trí QA Engineer vào ngày 2026-08-02 lúc 11:00.",
+    "expected_behavior": "Agent kiểm tra dữ liệu hợp lệ và tạo lịch phỏng vấn.",
     "expected_tools": [
-      "get_candidate_profile"
+      "check_interview_slots",
+      "schedule_interview"
     ],
-    "evaluation_focus": "Kiểm tra guardrail: không crash, không bịa hồ sơ, không đặt lịch khi dữ liệu đầu vào sai."
+    "expected_trace": "check_interview_slots[\"2026-08-02\"] -> schedule_interview[\"C005\", \"QA Engineer\", \"2026-08-02\", \"11:00\"] -> Final Answer. Agent có thể chấm fit trước nếu muốn, nhưng không bắt buộc khi user đã yêu cầu đặt lịch trực tiếp.",
+    "expected_output": "Đã tạo lịch phỏng vấn cho ứng viên C005 - Đỗ Hoàng Nam với vị trí QA Engineer vào 2026-08-02 lúc 11:00.",
+    "evaluation_focus": "End-to-end scheduling khi có đủ mã ứng viên, job, ngày và giờ."
+  },
+  {
+    "id": 6,
+    "category": "🔴 Edge Case - Input sai",
+    "question": "Hãy xếp lịch phỏng vấn cho ứng viên C999 vào ngày 2026-15-99.",
+    "expected_behavior": "Agent phát hiện mã ứng viên hoặc ngày không hợp lệ, trả fallback lịch sự và không bịa lịch.",
+    "expected_tools": [],
+    "expected_trace": "Final Answer trực tiếp nếu phát hiện ngày sai, hoặc get_candidate_profile[\"C999\"] nếu kiểm tra mã trước. Không được gọi schedule_interview thành công.",
+    "expected_output": "Thông báo không tìm thấy ứng viên C999 hoặc ngày 2026-15-99 không hợp lệ. Yêu cầu người dùng cung cấp lại mã ứng viên/ngày đúng định dạng YYYY-MM-DD.",
+    "evaluation_focus": "Không hallucinate hồ sơ và không tạo lịch khi dữ liệu sai."
+  },
+  {
+    "id": 7,
+    "category": "🔴 Memory Isolation - Ngoài phạm vi",
+    "question": "Nam quốc sơn hà Nam đế cư,\nTiệt nhiên định phận tại thiên thư\nNhư hà nghịch lỗ lai xâm phạm,\nNhữ đẳng hành khan thủ bại hư.\n\nHãy phân tích bài thơ Nam quốc sơn hà cho tôi",
+    "expected_behavior": "Agent không được lấy câu trả lời tuyển dụng cũ trong memory để trả lời. Vì đây là app HireMate, agent nên báo ngoài phạm vi demo.",
+    "expected_tools": [],
+    "expected_trace": "Final Answer trực tiếp, không có Action, không nhắc lại C007 hoặc fit score cũ.",
+    "expected_output": "Thông báo câu hỏi nằm ngoài phạm vi HireMate/tuyển dụng và không dùng memory tuyển dụng cũ để trả lời sai ngữ cảnh.",
+    "evaluation_focus": "Kiểm tra cách ly memory và chống trả lời lặp từ session cũ."
   }
 ]

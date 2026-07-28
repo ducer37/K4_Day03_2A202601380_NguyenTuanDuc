@@ -20,6 +20,9 @@ load_dotenv()
 
 class BaseLLMProvider:
     """Interface cơ sở cho tất cả các LLM Provider"""
+    def __init__(self):
+        self.last_usage = None
+
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         raise NotImplementedError
 
@@ -27,10 +30,12 @@ class BaseLLMProvider:
 class GeminiProvider(BaseLLMProvider):
     """Google Gemini Provider"""
     def __init__(self, api_key: str = None, model: str = None):
+        super().__init__()
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model_name = model or os.getenv("LLM_MODEL") or "gemini-2.5-flash"
         
     def generate(self, prompt: str, system_prompt: str = "") -> str:
+        self.last_usage = None
         if not self.api_key or self.api_key == "your_gemini_api_key_here":
             return "[Gemini Error]: Chưa cấu hình GEMINI_API_KEY trong file .env!"
         try:
@@ -41,6 +46,14 @@ class GeminiProvider(BaseLLMProvider):
                 model=self.model_name,
                 contents=contents
             )
+            usage_metadata = getattr(response, "usage_metadata", None)
+            if usage_metadata:
+                self.last_usage = {
+                    "input_tokens": int(getattr(usage_metadata, "prompt_token_count", 0) or 0),
+                    "output_tokens": int(getattr(usage_metadata, "candidates_token_count", 0) or 0),
+                    "total_tokens": int(getattr(usage_metadata, "total_token_count", 0) or 0),
+                    "source": "provider",
+                }
             if response.text:
                 return response.text
 
@@ -58,10 +71,12 @@ class GeminiProvider(BaseLLMProvider):
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI Provider (GPT-4o, GPT-3.5-turbo, etc.)"""
     def __init__(self, api_key: str = None, model: str = None):
+        super().__init__()
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model_name = model or os.getenv("LLM_MODEL") or "gpt-4o-mini"
         
     def generate(self, prompt: str, system_prompt: str = "") -> str:
+        self.last_usage = None
         if not self.api_key or self.api_key == "your_openai_api_key_here":
             return "[OpenAI Error]: Chưa cấu hình OPENAI_API_KEY trong file .env!"
         try:
@@ -76,6 +91,13 @@ class OpenAIProvider(BaseLLMProvider):
                 model=self.model_name,
                 messages=messages
             )
+            if response.usage:
+                self.last_usage = {
+                    "input_tokens": int(response.usage.prompt_tokens or 0),
+                    "output_tokens": int(response.usage.completion_tokens or 0),
+                    "total_tokens": int(response.usage.total_tokens or 0),
+                    "source": "provider",
+                }
             return response.choices[0].message.content
         except Exception as e:
             return f"[OpenAI Exception]: {str(e)}"
@@ -84,10 +106,12 @@ class OpenAIProvider(BaseLLMProvider):
 class AnthropicProvider(BaseLLMProvider):
     """Anthropic Claude Provider (Claude 3.5 Sonnet, Claude 3 Haiku)"""
     def __init__(self, api_key: str = None, model: str = None):
+        super().__init__()
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model_name = model or os.getenv("LLM_MODEL") or "claude-3-haiku-20240307"
         
     def generate(self, prompt: str, system_prompt: str = "") -> str:
+        self.last_usage = None
         if not self.api_key or self.api_key == "your_anthropic_api_key_here":
             return "[Anthropic Error]: Chưa cấu hình ANTHROPIC_API_KEY trong file .env!"
         try:
@@ -102,6 +126,16 @@ class AnthropicProvider(BaseLLMProvider):
                 kwargs["system"] = system_prompt
                 
             response = client.messages.create(**kwargs)
+            usage = getattr(response, "usage", None)
+            if usage:
+                input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
+                output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+                self.last_usage = {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                    "source": "provider",
+                }
             return response.content[0].text
         except Exception as e:
             return f"[Anthropic Exception]: {str(e)}"
@@ -110,10 +144,12 @@ class AnthropicProvider(BaseLLMProvider):
 class OpenRouterProvider(BaseLLMProvider):
     """OpenRouter Provider (Hỗ trợ gọi mọi model qua OpenRouter API)"""
     def __init__(self, api_key: str = None, model: str = None):
+        super().__init__()
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.model_name = model or os.getenv("LLM_MODEL") or "google/gemini-2.5-flash"
         
     def generate(self, prompt: str, system_prompt: str = "") -> str:
+        self.last_usage = None
         if not self.api_key or self.api_key == "your_openrouter_api_key_here":
             return "[OpenRouter Error]: Chưa cấu hình OPENROUTER_API_KEY trong file .env!"
         try:
@@ -133,6 +169,17 @@ class OpenRouterProvider(BaseLLMProvider):
             res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=30)
             if res.status_code == 200:
                 data = res.json()
+                usage = data.get("usage") or {}
+                if usage:
+                    input_tokens = int(usage.get("prompt_tokens", 0) or 0)
+                    output_tokens = int(usage.get("completion_tokens", 0) or 0)
+                    total_tokens = int(usage.get("total_tokens", input_tokens + output_tokens) or 0)
+                    self.last_usage = {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": total_tokens,
+                        "source": "provider",
+                    }
                 return data["choices"][0]["message"]["content"]
             else:
                 return f"[OpenRouter API Error {res.status_code}]: {res.text}"
@@ -142,7 +189,11 @@ class OpenRouterProvider(BaseLLMProvider):
 
 class MockProvider(BaseLLMProvider):
     """Offline Mock Provider (Cho bài test không cần kết nối API)"""
+    def __init__(self):
+        super().__init__()
+
     def generate(self, prompt: str, system_prompt: str = "") -> str:
+        self.last_usage = None
         if "HireMate Chatbot Baseline" in system_prompt:
             return self._baseline_response(prompt)
         if "HireMate ReAct Agent" in system_prompt:
